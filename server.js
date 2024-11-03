@@ -15,7 +15,7 @@ const uploadMiddleware = multer({ dest: 'uploads/' })
 const fs = require('fs');
 const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
 
-app.use(cors({ credentials: true, origin: 'https://chipper-smakager-268d8e.netlify.app' }));
+app.use(cors({ credentials: true, origin: process.env.BASE_URL }));
 app.use(express.json());
 app.use(cookieParser());
 app.use('/uploads', express.static(__dirname + '/uploads'))
@@ -178,8 +178,8 @@ app.post('/checkout', async (req, res) => {
             payment_method_types: ["card"],
             mode: 'payment',
             line_items: lineItems,
-            success_url: 'http://localhost:3000/success',
-            cancel_url: 'http://localhost:3000/cancel'
+            success_url: process.env.BASE_URL + '/success',
+            cancel_url: process.env.BASE_URL + '/cancel'
         })
 
         res.json({ id: session.id })
