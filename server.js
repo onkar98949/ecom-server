@@ -5,7 +5,7 @@ require("dotenv").config();
 const mongoose = require('mongoose')
 const registered = require('./UserSchema')
 const account = require('./AccountSchema')
-const addComment = require('./CommentSchema');
+const allComment = require('./CommentSchema');
 const nodemailer = require("nodemailer");
 const cors = require('cors')
 const jwt = require('jsonwebtoken')
@@ -75,7 +75,7 @@ app.post('/comment', async (req, res) => {
     try {
         const { comment, name, email, itemId } = req.body;
 
-        const newComment = addComment({
+        const newComment = allComment({
             name, email, comment, itemId
         });
         await newComment.save();
@@ -86,10 +86,22 @@ app.post('/comment', async (req, res) => {
     }
 })
 
+app.post('/delete-comment', async (req, res) => {
+    try {
+        const { _id } = req.body;
+
+        const findComment = await allComment.findOneAndDelete({ _id });
+
+        return res.status(200).json({ type: "success" })
+    } catch (err) {
+        res.status(400).json({ error: err })
+    }
+})
+
 app.post('/get-comments', async (req, res) => {
     try {
         const { itemId } = req.body;
-        const comments = await addComment.find({ itemId });
+        const comments = await allComment.find({ itemId });
 
         return res.status(200).json({ type: "success", comments })
     } catch (err) {
@@ -143,6 +155,18 @@ app.post('/contact', (req, res) => {
     }
     res.status(200).json({ msg: "Form Submitted" })
     main().catch(console.error);
+})
+
+app.patch('/comment', async (req, res) => {
+    try {
+        const { id, comment } = req.body;
+        const updateComment = await allComment.findOneAndUpdate({ _id: id }, { $set: { comment } }, { new: true });
+
+        if (updateComment) return res.status(200).json({ type: "success" })
+        return res.status(400).json({ error: "try again" })
+    } catch (err) {
+        res.status(400).json({ error: err })
+    }
 })
 
 

@@ -11,4 +11,4 @@ const cmtSchema = new mongoose.Schema({
     },
 })
 
-module.exports = mongoose.model("addComment", cmtSchema)
+module.exports = mongoose.model("allComment", cmtSchema)
