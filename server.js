@@ -14,11 +14,58 @@ const multer = require('multer');
 const uploadMiddleware = multer({ dest: 'uploads/' })
 const fs = require('fs');
 const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
+const crypto = require("crypto");
 
 app.use(cors({ credentials: true, origin: process.env.BASE_URL }));
 app.use(express.json());
 app.use(cookieParser());
 app.use('/uploads', express.static(__dirname + '/uploads'))
+
+const OTP_STORAGE = {};
+
+const authorizeUser = (req, res, next) => {
+    const token = req.headers.authorization.split(' ')[1];
+    try {
+        const decoded = jwt.verify(token, 'seceret123');
+        console.log(decoded, token);
+        next();
+    } catch (error) {
+        console.error("Token verification failed:", error.message);
+        return res.status(400).json({
+            type: "error",
+            msg: "Token is invalid or expired"
+        });
+    }
+}
+
+app.post("/send-otp", (req, res) => {
+    const { email } = req.body;
+    if (!email) return res.status(400).json({ message: "Email is required" });
+
+    const otp = crypto.randomInt(100000, 999999).toString();
+    OTP_STORAGE[email] = { otp, expiresAt: Date.now() + 300000 }; // 5 minutes
+
+    // Configure nodemailer
+    const transporter = nodemailer.createTransport({
+        service: "gmail",
+        auth: {
+            user: "your-email@gmail.com",
+            pass: "your-email-password",
+        },
+    });
+
+    const mailOptions = {
+        from: "your-email@gmail.com",
+        to: email,
+        subject: "Your OTP Code",
+        text: `Your OTP is ${otp}. It will expire in 5 minutes.`,
+    };
+
+    transporter.sendMail(mailOptions, (error) => {
+        if (error) return res.status(500).json({ message: "Failed to send email" });
+        res.status(200).json({ message: "OTP sent successfully" });
+    });
+});
 
 app.post('/register', async (req, res) => {
     try {
@@ -71,7 +118,25 @@ app.post('/login', async (req, res) => {
 })
 
 
-app.post('/comment', async (req, res) => {
+
+app.post('/token-verify', (req, res) => {
+    const { token } = req.body;
+    try {
+        const decoded = jwt.verify(token, 'seceret123');
+        console.log(decoded);
+
+        return res.status(200).json({ type: "success", msg: "verified" });
+    } catch (error) {
+        console.error("Token verification failed:", error.message);
+        return res.status(400).json({
+            type: "error",
+            msg: "Token is invalid or expired"
+        });
+    }
+})
+
+
+app.post('/comment', authorizeUser, async (req, res) => {
     try {
         const { comment, name, email, itemId } = req.body;
 
