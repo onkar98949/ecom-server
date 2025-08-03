@@ -136,7 +136,7 @@ app.post('/token-verify', (req, res) => {
 })
 
 
-app.post('/comment', authorizeUser, async (req, res) => {
+app.post('/comment', async (req, res) => {
     try {
         const { comment, name, email, itemId } = req.body;
 
